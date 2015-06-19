@@ -46,7 +46,6 @@ function Directive(vm, tar, def, name, expr) {
     var prev
     var unwatch
 
-
     // set properties
     util.objEach(def, function(k, v) {
         d[k] = v
@@ -113,17 +112,18 @@ function Reve(options) {
     var _created = options.created
     var _destroy = options.destroy
 
-    this.$methods = options.methods
+    this.$methods = {}
     this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
     this.$refs = {}
 
-    util.objEach(function (key, m) {
-        vm[key] = m.bind(vm)
+    util.objEach(options.methods, function (key, m) {
+        vm.$methods[key] = vm[key] = m.bind(vm)
     })
 
     _created && _created.call(vm)
-    // nested component
+
     var componentDec = NS + 'component'
+    // nested component
     util.slice(el.querySelectorAll('[' + componentDec + ']')).forEach(function (tar) {
         var cname = tar.getAttribute(componentDec)
         if (!cname) {
@@ -141,7 +141,6 @@ function Reve(options) {
             this.$refs[refid] = c
         }
     }.bind(this))
-
 
     Object.keys(buildInDirectives).forEach(function (dname) {
         var def = buildInDirectives[dname]
