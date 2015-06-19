@@ -11,9 +11,17 @@
 <body>
 	<div id="app" r-show="{show}" r-class="{hl: hl}">
 		Hello world
+		<div r-component="c-header" r-ref="header" r-html="{title}"></div>
 	</div>
 	<script>
-		new Reve({
+		Reve.component('c-header' ,{
+			data: function () {
+				return {
+					title: 'Hi, Reve'
+				}
+			}
+		})
+		var $app = new Reve({
 			el: '#app',
 			data: function () {
 				return {
@@ -22,6 +30,8 @@
 				}
 			}
 		})
+
+		console.log($app)
 	</script>
 </body>
 </html>

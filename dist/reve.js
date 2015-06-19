@@ -61,9 +61,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var util = __webpack_require__(1)
+	var util = __webpack_require__(3)
 	var conf = __webpack_require__(2)
-	var $ = __webpack_require__(3)
+	var $ = __webpack_require__(4)
+	var is = __webpack_require__(1)
 	var _execute = __webpack_require__(5)
 	var buildInDirectives = __webpack_require__(6)
 	var _components = {}
@@ -151,7 +152,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var $directives = this.$directives = []
 	    this.$update = function () {
 	        this.$directives.forEach(function (d) {
-	            console.log(d)
 	            d.$update()
 	        })
 	    }
@@ -173,20 +173,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
 	    this.$refs = {}
 
-	    util.slice(el.querySelectorAll(NS + 'component')).forEach(function (tar) {
-	        // nested component TBD
+	    // nested component
+	    var componentDec = NS + 'component'
+	    util.slice(el.querySelectorAll('[' + componentDec + ']')).forEach(function (tar) {
+	        var cname = tar.getAttribute(componentDec)
+	        if (!cname) {
+	            return console.error(componentDec + ' missing component id.')
+	        }
+	        var Component = _components[cname]
+	        if (!Component) {
+	            return console.error(componentDec + ' not found.')
+	        }
+	        var c = new Component({
+	            el: tar
+	        })
+	        var refid = tar.getAttribute(NS + 'ref')
+	        if (refid) {
+	            this.$refs[refid] = c
+	        }
 	    }.bind(this))
 
 
 	    Object.keys(buildInDirectives).forEach(function (dname) {
 	        var def = buildInDirectives[dname]
 	        dname = NS + dname
-
-	        util.slice(document.querySelectorAll('[' + dname + ']'))
-	            .forEach(function (tar) {
+	        var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
+	        if (el.hasAttribute(dname)) bindingDrts.unshift(el)
+	        bindingDrts.forEach(function (tar) {
 
 	            var drefs = tar._diretives || []
-	            var expr = tar.getAttribute(dname) + ''
+	            var expr = tar.getAttribute(dname) || ''
 	            // prevent repetitive binding
 	            if (drefs && ~drefs.indexOf(dname)) return
 	            var sep = util.directiveSep
@@ -239,6 +255,38 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	var conf = __webpack_require__(2)
+	module.exports = {
+	    Element: function(el) {
+	        return el instanceof HTMLElement || el instanceof DocumentFragment
+	    },
+	    DOM: function (el) {
+	        return this.Element(el) || el instanceof Comment
+	    },
+	    IfElement: function(tn) {
+	        return tn == (conf.namespace + 'if').toUpperCase()
+	    },
+	    RepeatElement: function(tn) {
+	        return tn == (conf.namespace + 'repeat').toUpperCase()
+	    }
+	}
+
+/***/ },
+/* 2 */
+/***/ function(module, exports) {
+
+	var conf = {
+		namespace: 'r-',
+		directiveSep: ';'
+	}
+
+	module.exports = conf
+
+/***/ },
+/* 3 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -323,18 +371,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = util
 
 /***/ },
-/* 2 */
-/***/ function(module, exports) {
-
-	var conf = {
-		namespace: 'r-',
-		directiveSep: ';'
-	}
-
-	module.exports = conf
-
-/***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -342,8 +379,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	'use strict';
-	var util = __webpack_require__(1)
-	var is = __webpack_require__(4)
+	var util = __webpack_require__(3)
+	var is = __webpack_require__(1)
 
 	function Selector(sel) {
 	    if (util.type(sel) == 'string') {
@@ -537,27 +574,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	var conf = __webpack_require__(2)
-	module.exports = {
-	    Element: function(el) {
-	        return el instanceof HTMLElement || el instanceof DocumentFragment
-	    },
-	    DOM: function (el) {
-	        return this.Element(el) || el instanceof Comment
-	    },
-	    IfElement: function(tn) {
-	        return tn == (conf.namespace + 'if').toUpperCase()
-	    },
-	    RepeatElement: function(tn) {
-	        return tn == (conf.namespace + 'repeat').toUpperCase()
-	    }
-	}
-
-/***/ },
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -565,7 +581,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *  execute expression from template with specified Scope and ViewModel
 	 */
 
-	var util = __webpack_require__(1)
+	var util = __webpack_require__(3)
 	/**
 	 *  Calc expression value
 	 */
@@ -610,9 +626,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var $ = __webpack_require__(3)
+	var $ = __webpack_require__(4)
 	var conf = __webpack_require__(2)
-	var util = __webpack_require__(1)
+	var util = __webpack_require__(3)
 
 	module.exports = {
 	    'attr': {

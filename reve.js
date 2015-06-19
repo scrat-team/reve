@@ -3,6 +3,7 @@
 var util = require('./lib/util')
 var conf = require('./lib/conf')
 var $ = require('./lib/dm')
+var is = require('./lib/is')
 var _execute = require('./lib/execute')
 var buildInDirectives = require('./lib/build-in')
 var _components = {}
@@ -90,7 +91,6 @@ function Reve(options) {
     var $directives = this.$directives = []
     this.$update = function () {
         this.$directives.forEach(function (d) {
-            console.log(d)
             d.$update()
         })
     }
@@ -112,20 +112,36 @@ function Reve(options) {
     this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
     this.$refs = {}
 
-    util.slice(el.querySelectorAll(NS + 'component')).forEach(function (tar) {
-        // nested component TBD
+    // nested component
+    var componentDec = NS + 'component'
+    util.slice(el.querySelectorAll('[' + componentDec + ']')).forEach(function (tar) {
+        var cname = tar.getAttribute(componentDec)
+        if (!cname) {
+            return console.error(componentDec + ' missing component id.')
+        }
+        var Component = _components[cname]
+        if (!Component) {
+            return console.error(componentDec + ' not found.')
+        }
+        var c = new Component({
+            el: tar
+        })
+        var refid = tar.getAttribute(NS + 'ref')
+        if (refid) {
+            this.$refs[refid] = c
+        }
     }.bind(this))
 
 
     Object.keys(buildInDirectives).forEach(function (dname) {
         var def = buildInDirectives[dname]
         dname = NS + dname
-
-        util.slice(document.querySelectorAll('[' + dname + ']'))
-            .forEach(function (tar) {
+        var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
+        if (el.hasAttribute(dname)) bindingDrts.unshift(el)
+        bindingDrts.forEach(function (tar) {
 
             var drefs = tar._diretives || []
-            var expr = tar.getAttribute(dname) + ''
+            var expr = tar.getAttribute(dname) || ''
             // prevent repetitive binding
             if (drefs && ~drefs.indexOf(dname)) return
             var sep = util.directiveSep
