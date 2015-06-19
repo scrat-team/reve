@@ -90,6 +90,7 @@ function Reve(options) {
     var $directives = this.$directives = []
     this.$update = function () {
         this.$directives.forEach(function (d) {
+            console.log(d)
             d.$update()
         })
     }
@@ -118,15 +119,15 @@ function Reve(options) {
 
     Object.keys(buildInDirectives).forEach(function (dname) {
         var def = buildInDirectives[dname]
-        dname += NS
+        dname = NS + dname
+
         util.slice(document.querySelectorAll('[' + dname + ']'))
             .forEach(function (tar) {
 
             var drefs = tar._diretives || []
-            var expr = tar.getAttribute(dname).value || ''
+            var expr = tar.getAttribute(dname) + ''
             // prevent repetitive binding
             if (drefs && ~drefs.indexOf(dname)) return
-
             var sep = util.directiveSep
             var d
             if (def.multi && expr.match(sep)) {
@@ -162,7 +163,7 @@ function Ctor (options) {
     return Class
 }
 
-Reve.createClass = function (options) {
+Reve.create = function (options) {
     return Ctor(options)
 }
 

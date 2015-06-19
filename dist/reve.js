@@ -64,20 +64,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	var util = __webpack_require__(1)
 	var conf = __webpack_require__(2)
 	var $ = __webpack_require__(3)
-	var buildInDirectives = __webpack_require__(5)
+	var _execute = __webpack_require__(5)
+	var buildInDirectives = __webpack_require__(6)
+	var _components = {}
+	var _did = 0
 
 	function _isExpr(c) {
 	    return c ? !!c.trim().match(/^\{[\s\S]*?\}$/m) : false
-	}
-	function _extract (expr) {
-	    if (!expr) return null
-	    var vars = expr.match(_varsRegexp)
-	    vars = !vars ? [] : vars.filter(function(i) {
-	        if (!i.match(/^[\."'\]\[]/) && !i.match(/\($/)) {
-	            return i
-	        }
-	    })
-	    return vars
 	}
 	function _strip (expr) {
 	    return expr.trim()
@@ -85,7 +78,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            .replace(/^- /, '')
 	}
 
-	var _did = 0
 	function Directive(vm, tar, def, name, expr) {
 	    var d = this
 	    var bindParams = []
@@ -124,7 +116,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *  execute wrap with directive name
 	     */
 	    function _exec(expr) {
-	        return _execute(vm, scope, expr, name)
+	        return _execute(vm, expr, name)
 	    }
 
 	    /**
@@ -145,10 +137,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    prev = isExpr ? _exec(expr) : expr
 	    bindParams.push(prev)
 	    bindParams.push(expr)
-	    // watch variable changes of expression
-	    if (def.watch !== false && isExpr) {
-	        unwatch = _watch(vm, _extractVars(expr), _update)
-	    }
 	    d.$update = _update
 
 	    // ([property-name], expression-value, expression) 
@@ -160,9 +148,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var vm = this
 	    var NS = conf.namespace
 
-	    this.$directives = []
+	    var $directives = this.$directives = []
 	    this.$update = function () {
 	        this.$directives.forEach(function (d) {
+	            console.log(d)
 	            d.$update()
 	        })
 	    }
@@ -180,39 +169,69 @@ return /******/ (function(modules) { // webpackBootstrap
 	    } else if (!is.Element(el)) {
 	        throw new Error('Unmatch el option')
 	    }
+
+	    this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
+	    this.$refs = {}
+
+	    util.slice(el.querySelectorAll(NS + 'component')).forEach(function (tar) {
+	        // nested component TBD
+	    }.bind(this))
+
+
 	    Object.keys(buildInDirectives).forEach(function (dname) {
 	        var def = buildInDirectives[dname]
-	        dname += NS
+	        dname = NS + dname
+
 	        util.slice(document.querySelectorAll('[' + dname + ']'))
 	            .forEach(function (tar) {
 
 	            var drefs = tar._diretives || []
-	            var expr = tar.getAttribute(dname).value || ''
+	            var expr = tar.getAttribute(dname) + ''
 	            // prevent repetitive binding
 	            if (drefs && ~drefs.indexOf(dname)) return
-
 	            var sep = util.directiveSep
 	            var d
-	            // multiple defines expression parse
 	            if (def.multi && expr.match(sep)) {
-	                    _strip(expr)
-	                        .split(sep)
-	                        .forEach(function(item) {
-	                            // discard empty expression 
-	                            if (!item.trim()) return
-	                            
-	                            d = new Directive(vm, tar, def, dname, '{' + item + '}')
-	                            _directives.push(d)
-	                            _setBindings2Scope(scope, d)
-	                        })
+	                // multiple defines expression parse
+	                _strip(expr)
+	                    .split(sep)
+	                    .forEach(function(item) {
+	                        // discard empty expression 
+	                        if (!item.trim()) return
+	                        d = new Directive(vm, tar, def, dname, '{' + item + '}')
+	                    })
 	            } else {
-	                $d = new Directive(vm, tar, def, dname, expr)
+	                d = new Directive(vm, tar, def, dname, expr)
 	            }
-
+	            $directives.push(d)
 	            drefs.push(dname)
 	            tar._diretives = drefs
 	        })
 	    })
+	}
+
+	function Ctor (options) {
+	    var baseMethods = options.methods
+	    function Class (opts) {
+	        var baseData = options.data ? options.data() : {}
+	        var instanOpts = util.extend({}, options, opts)
+	        typeof(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
+	        util.extend({}, instanOpts.methods, baseMethods)
+	        util.extend({}, instanOpts.data, baseData)
+	        Reve.call(this, instanOpts)
+	    }
+	    Class.prototype = Reve.prototype
+	    return Class
+	}
+
+	Reve.create = function (options) {
+	    return Ctor(options)
+	}
+
+	Reve.component = function (id, options) {
+	    var c = Ctor(options)
+	    _components[id] = c
+	    return c
 	}
 
 	module.exports = Reve
@@ -224,17 +243,53 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
+	function hasOwn (obj, prop) {
+	    return obj && obj.hasOwnProperty(prop)
+	}
+
+
 	var util = {
 	    type: function(obj) {
 	        return /\[object (\w+)\]/.exec(Object.prototype.toString.call(obj))[1].toLowerCase()
 	    },
-	    objEach: function(obj, fn) {
-	        if (!obj) return
-	        for (var key in obj) {
-	            if (hasOwn(obj, key)) {
-	                if (fn(key, obj[key]) === false) break
+	    extend: function(obj) {
+	        if (this.type(obj) != 'object') return obj;
+	        var source, prop;
+	        for (var i = 1, length = arguments.length; i < length; i++) {
+	            source = arguments[i];
+	            for (prop in source) {
+	                obj[prop] = source[prop];
 	            }
 	        }
+	        return obj;
+	    },
+	    objEach: function (obj, fn) {
+	        if (!obj) return
+	        for(var key in obj) {
+	            if (hasOwn(obj, key)) {
+	                if(fn(key, obj[key]) === false) break
+	            }
+	        }
+	    },
+
+	    immutable: function (obj) {
+	        var that = this
+	        var _t = this.type(obj)
+	        var n
+
+	        if (_t == 'array') {
+	            n = obj.map(function (item) {
+	                return that.immutable(item)
+	            })
+	        } else if (_t == 'object') {
+	            n = {}
+	            this.objEach(obj, function (k, v) {
+	                n[k] = that.immutable(v)
+	            })
+	        } else {
+	            n = obj
+	        }
+	        return n
 	    },
 	    diff: function(next, pre, _t) {
 	        var that = this
@@ -507,6 +562,49 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
+	 *  execute expression from template with specified Scope and ViewModel
+	 */
+
+	var util = __webpack_require__(1)
+	/**
+	 *  Calc expression value
+	 */
+	function _execute($vm/*, expression, [label], [target]*/) {
+	    /**
+	     *  $scope is passed when call instance method $compile, 
+	     *  Each "scope" object maybe include "$parent, data, method" properties
+	     */
+	    var $scope = util.extend({}, $vm.$methods, $vm.$data)
+
+	    try {
+	        return util.immutable(eval('with($scope){(%s)}'.replace('%s', arguments[1])))
+	    } catch (e) {
+	        arguments[1] = /^\{/.test(arguments[1]) 
+	                        ? '. ' + arguments[1]
+	                        : '. {' + arguments[1] + '}' // expr
+	        // arguments[2] // label
+	        // arguments[3] // target
+	        switch (e.name) {
+	            case 'ReferenceError':
+	                console.warn(e.message + arguments[1])
+	                break
+	            default:
+	                console.error(
+	                     (arguments[2] ? '\'' + arguments[2] + '\': ' : ''),
+	                    e.message + arguments[1],
+	                    arguments[3] || ''
+	                )
+	        }
+	        return ''
+	    }
+	}
+	module.exports = _execute
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
 	 *  Build-in Global Directives
 	 */
 
@@ -545,78 +643,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    'html': {
 	        update: function(nextHTML) {
 	            this.$el.innerHTML = nextHTML
-	        }
-	    },
-	    'model': {
-	        bind: function(prop) {
-	            var tagName = this.$el.tagName
-	            var type = tagName.toLowerCase()
-	            var $el = this._$el = $(this.$el)
-
-	            // pick input element type spec
-	            type = type == 'input' ? $el.attr('type') || 'text' : type
-
-	            switch (type) {
-	                case 'tel':
-	                case 'url':
-	                case 'text':
-	                case 'search':
-	                case 'password':
-	                case 'textarea':
-	                    this.evtType = 'input'
-	                    break
-
-	                case 'date':
-	                case 'week':
-	                case 'time':
-	                case 'month':
-	                case 'datetime':
-	                case 'datetime-local':
-	                case 'color':
-	                case 'range':
-	                case 'number':
-	                case 'select':
-	                case 'checkbox':
-	                    this.evtType = 'change'
-	                    break
-	                default:
-	                    console.warn('"' + conf.namespace + 'model" only support input,textarea,select')
-	                    return
-	            }
-
-	            var vm = this.$vm
-	            var vType = type == 'checkbox' ? 'checked' : 'value'
-	            var that = this
-
-	            /**
-	             *  DOM input 2 state
-	             */
-	            this._requestChange = function() {
-	                    vm.$set(that._prop, that.$el[vType])
-	                }
-	                /**
-	                 *  State 2 DOM input
-	                 */
-	            this._update = function() {
-	                that.$el[vType] = vm.$get(that._prop)
-	            }
-	            $el.on(this.evtType, this._requestChange)
-	            var watches = this._watches = []
-	            var wKeypath = util.normalize(prop)
-	            while (wKeypath) {
-	                watches.push(this.$vm.$watch(wKeypath, this._update))
-	                wKeypath = util.digest(wKeypath)
-	            }
-	        },
-	        update: function(prop) {
-	            this._prop = prop
-	            this._update()
-	        },
-	        unbind: function() {
-	            this._$el.off(this.evtType, this._requestChange)
-	            this._watches.forEach(function(f) {
-	                f()
-	            })
 	        }
 	    },
 	    'on': {

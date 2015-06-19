@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>REVE</title>
+	<script src="../dist/reve.js"></script>
+	<style>
+		.hl {font-size: 20px;color: cornflowerblue}
+	</style>
+</head>
+<body>
+	<div id="app" r-show="{show}" r-class="{hl: hl}">
+		Hello world
+	</div>
+	<script>
+		new Reve({
+			el: '#app',
+			data: function () {
+				return {
+					show: true,
+					hl: true
+				}
+			}
+		})
+	</script>
+</body>
+</html>
