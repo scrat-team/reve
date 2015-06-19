@@ -5,6 +5,8 @@ var conf = require('./lib/conf')
 var $ = require('./lib/dm')
 var _execute = require('./lib/execute')
 var buildInDirectives = require('./lib/build-in')
+var _components = {}
+var _did = 0
 
 function _isExpr(c) {
     return c ? !!c.trim().match(/^\{[\s\S]*?\}$/m) : false
@@ -15,7 +17,6 @@ function _strip (expr) {
             .replace(/^- /, '')
 }
 
-var _did = 0
 function Directive(vm, tar, def, name, expr) {
     var d = this
     var bindParams = []
@@ -106,6 +107,15 @@ function Reve(options) {
     } else if (!is.Element(el)) {
         throw new Error('Unmatch el option')
     }
+
+    this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
+    this.$refs = {}
+
+    util.slice(el.querySelectorAll(NS + 'component')).forEach(function (tar) {
+        // nested component TBD
+    }.bind(this))
+
+
     Object.keys(buildInDirectives).forEach(function (dname) {
         var def = buildInDirectives[dname]
         dname += NS
@@ -136,6 +146,30 @@ function Reve(options) {
             tar._diretives = drefs
         })
     })
+}
+
+function Ctor (options) {
+    var baseMethods = options.methods
+    function Class (opts) {
+        var baseData = options.data ? options.data() : {}
+        var instanOpts = util.extend({}, options, opts)
+        typeof(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
+        util.extend({}, instanOpts.methods, baseMethods)
+        util.extend({}, instanOpts.data, baseData)
+        Reve.call(this, instanOpts)
+    }
+    Class.prototype = Reve.prototype
+    return Class
+}
+
+Reve.createClass = function (options) {
+    return Ctor(options)
+}
+
+Reve.component = function (id, options) {
+    var c = Ctor(options)
+    _components[id] = c
+    return c
 }
 
 module.exports = Reve
