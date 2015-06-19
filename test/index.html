@@ -10,8 +10,15 @@
 </head>
 <body>
 	<div id="app" r-show="{show}" r-class="{hl: hl}">
-		Hello world
-		<div r-component="c-header" r-ref="header" r-html="{title}"></div>
+		<div r-component="c-header" r-ref="header">
+			<center r-html="{title}"></center>
+		</div>
+		
+		<h1>Hello world</h1>
+
+		<button r-on="{
+			click: onClick
+		}">Click event binding</button>
 	</div>
 	<script>
 		Reve.component('c-header' ,{
@@ -19,6 +26,9 @@
 				return {
 					title: 'Hi, Reve'
 				}
+			},
+			ready: function () {
+				console.log('c-header mount')
 			}
 		})
 		var $app = new Reve({
@@ -26,7 +36,14 @@
 			data: function () {
 				return {
 					show: true,
-					hl: true
+					hl: true,
+				}
+			},
+			methods: {
+				onClick: function () {
+					alert('click it will disable hightlight')
+					this.$data.hl = false
+					this.$update()
 				}
 			}
 		})

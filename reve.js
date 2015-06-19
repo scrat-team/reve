@@ -109,9 +109,19 @@ function Reve(options) {
         throw new Error('Unmatch el option')
     }
 
+    var _ready = options.ready
+    var _created = options.created
+    var _destroy = options.destroy
+
+    this.$methods = options.methods
     this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
     this.$refs = {}
 
+    util.objEach(function (key, m) {
+        vm[key] = m.bind(vm)
+    })
+
+    _created && _created.call(vm)
     // nested component
     var componentDec = NS + 'component'
     util.slice(el.querySelectorAll('[' + componentDec + ']')).forEach(function (tar) {
@@ -163,6 +173,8 @@ function Reve(options) {
             tar._diretives = drefs
         })
     })
+
+    _ready && _ready.call(vm)
 }
 
 function Ctor (options) {
