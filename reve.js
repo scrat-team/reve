@@ -1,27 +1,18 @@
 'use strict';
 
-var util = require('./util')
-var conf = require('./conf')
-var buildInDirectives = require('./build-in')
-var $ = require('dm')
+var util = require('./lib/util')
+var conf = require('./lib/conf')
+var $ = require('./lib/dm')
+var _execute = require('./lib/execute')
+var buildInDirectives = require('./lib/build-in')
 
 function _isExpr(c) {
     return c ? !!c.trim().match(/^\{[\s\S]*?\}$/m) : false
 }
-function _extract (expr) {
-    if (!expr) return null
-    var vars = expr.match(_varsRegexp)
-    vars = !vars ? [] : vars.filter(function(i) {
-        if (!i.match(/^[\."'\]\[]/) && !i.match(/\($/)) {
-            return i
-        }
-    })
-    return vars
-}
 function _strip (expr) {
-	return expr.trim()
-	        .match(/^\{([\s\S]*)\}$/m)[1]
-	        .replace(/^- /, '')
+    return expr.trim()
+            .match(/^\{([\s\S]*)\}$/m)[1]
+            .replace(/^- /, '')
 }
 
 var _did = 0
@@ -63,7 +54,7 @@ function Directive(vm, tar, def, name, expr) {
      *  execute wrap with directive name
      */
     function _exec(expr) {
-        return _execute(vm, scope, expr, name)
+        return _execute(vm, expr, name)
     }
 
     /**
@@ -84,10 +75,6 @@ function Directive(vm, tar, def, name, expr) {
     prev = isExpr ? _exec(expr) : expr
     bindParams.push(prev)
     bindParams.push(expr)
-    // watch variable changes of expression
-    if (def.watch !== false && isExpr) {
-        unwatch = _watch(vm, _extractVars(expr), _update)
-    }
     d.$update = _update
 
     // ([property-name], expression-value, expression) 
@@ -99,12 +86,12 @@ function Reve(options) {
     var vm = this
     var NS = conf.namespace
 
-	this.$directives = []
-	this.$update = function () {
-		this.$directives.forEach(function (d) {
-			d.$update()
-		})
-	}
+    var $directives = this.$directives = []
+    this.$update = function () {
+        this.$directives.forEach(function (d) {
+            d.$update()
+        })
+    }
     var el = options.el
     /**
      *  Mounted element detect
@@ -119,7 +106,7 @@ function Reve(options) {
     } else if (!is.Element(el)) {
         throw new Error('Unmatch el option')
     }
-	Object.keys(buildInDirectives).forEach(function (dname) {
+    Object.keys(buildInDirectives).forEach(function (dname) {
         var def = buildInDirectives[dname]
         dname += NS
         util.slice(document.querySelectorAll('[' + dname + ']'))
@@ -132,22 +119,19 @@ function Reve(options) {
 
             var sep = util.directiveSep
             var d
-            // multiple defines expression parse
             if (def.multi && expr.match(sep)) {
-                    _strip(expr)
-                        .split(sep)
-                        .forEach(function(item) {
-                            // discard empty expression 
-                            if (!item.trim()) return
-                            
-                            d = new Directive(vm, tar, def, dname, '{' + item + '}')
-                            _directives.push(d)
-                            _setBindings2Scope(scope, d)
-                        })
+                // multiple defines expression parse
+                _strip(expr)
+                    .split(sep)
+                    .forEach(function(item) {
+                        // discard empty expression 
+                        if (!item.trim()) return
+                        d = new Directive(vm, tar, def, dname, '{' + item + '}')
+                    })
             } else {
-                $d = new Directive(vm, tar, def, dname, expr)
+                d = new Directive(vm, tar, def, dname, expr)
             }
-
+            $directives.push(d)
             drefs.push(dname)
             tar._diretives = drefs
         })
