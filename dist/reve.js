@@ -191,11 +191,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // TBD
 	    // nested component
 	    childs.forEach(function (tar) {
+	        if (tar._component || ~grandChilds.indexOf(tar)) return
+	        
 	        var cname = tar.getAttribute(componentDec)
 	        if (!cname) {
+	            console.log(tar, el)
 	            return console.error(componentDec + ' missing component id.')
 	        }
-	        if (tar._component || ~grandChilds.indexOf(tar)) return
 	        var Component = _components[cname]
 	        if (!Component) {
 	            return console.error(componentDec + ' not found.')
