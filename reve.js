@@ -22,6 +22,148 @@ function _execLiteral (expr, vm) {
     return _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','))
 }
 
+function Reve(options) {
+    var vm = this
+    var NS = conf.namespace
+    var _ready = options.ready
+    var _created = options.created
+    var _destroy = options.destroy
+    var _shouldUpate = options.shouldUpdate
+
+    var $directives = this.$directives = []
+    this.$update = function () {
+        // should update return false will stop UI update
+        if (_shouldUpate && _shouldUpate() == false) return
+        
+        this.$directives.forEach(function (d) {
+            d.$update()
+        })
+    }
+    var el = options.el
+    /**
+     *  Mounted element detect
+     */
+    if (el && options.template) {
+        el.innerHTML = options.template
+    } else if (options.template) {
+        el = document.createElement('div')
+        el.innerHTML = options.template
+    } else if (util.type(el) == 'string') {
+        el = document.querySelector(el)
+    } else if (!is.Element(el)) {
+        throw new Error('Unmatch el option')
+    }
+
+    this.$methods = {}
+    this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
+    this.$refs = {}
+
+    util.objEach(options.methods, function (key, m) {
+        vm.$methods[key] = vm[key] = m.bind(vm)
+    })
+
+    _created && _created.call(vm)
+
+    var componentDec = NS + 'component'
+    var componentSel = '[' + componentDec + ']'
+    el.removeAttribute(componentDec)
+    var grandChilds = util.slice(el.querySelectorAll(componentSel + ' ' + componentSel))
+    var childs = util.slice(el.querySelectorAll(componentSel))
+    // nested component
+    childs.forEach(function (tar) {
+        // prevent cross level component parse and repeat parse
+        if (tar._component || ~grandChilds.indexOf(tar)) return
+
+        var cname = tar.getAttribute(componentDec)
+        if (!cname) {
+            return console.error(componentDec + ' missing component id.')
+        }
+        var Component = _components[cname]
+        if (!Component) {
+            return console.error(componentDec + ' not found.')
+        }
+
+        var refid = tar.getAttribute(NS + 'ref')
+        var cdata = tar.getAttribute(NS + 'data')
+        var cmethods = tar.getAttribute(NS + 'methods')
+        var data = {}
+        var methods = {}
+        if (cdata) {
+            data = _execLiteral(cdata, this)            
+        }
+        if (cmethods) {
+            methods = _execLiteral(cmethods, this)
+        }
+        tar._component = componentDec
+        var c = new Component({
+            el: tar,
+            data: data,
+            methods: methods
+        })
+        if (refid) {
+            this.$refs[refid] = c
+        }
+    }.bind(this))
+
+    Object.keys(buildInDirectives).forEach(function (dname) {
+
+        var def = buildInDirectives[dname]
+        dname = NS + dname
+        var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
+        if (el.hasAttribute(dname)) bindingDrts.unshift(el)
+        bindingDrts.forEach(function (tar) {
+
+            var drefs = tar._diretives || []
+            var expr = tar.getAttribute(dname) || ''
+            // prevent repetitive binding
+            if (drefs && ~drefs.indexOf(dname)) return
+            var sep = util.directiveSep
+            var d
+            if (def.multi && expr.match(sep)) {
+                // multiple defines expression parse
+                _strip(expr)
+                    .split(sep)
+                    .forEach(function(item) {
+                        // discard empty expression 
+                        if (!item.trim()) return
+                        d = new Directive(vm, tar, def, dname, '{' + item + '}')
+                    })
+            } else {
+                d = new Directive(vm, tar, def, dname, expr)
+            }
+            $directives.push(d)
+            drefs.push(dname)
+            tar._diretives = drefs
+        })
+    })
+
+    _ready && _ready.call(vm)
+}
+
+function Ctor (options) {
+    var baseMethods = options.methods
+    function Class (opts) {
+        var baseData = options.data ? options.data() : {}
+        var instanOpts = util.extend({}, options, opts)
+        typeof(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
+        instanOpts.methods = util.extend({}, baseMethods, instanOpts.methods)
+        instanOpts.data = util.extend({}, baseData, instanOpts.data)
+        Reve.call(this, instanOpts)
+    }
+    Class.prototype = Reve.prototype
+    return Class
+}
+
+Reve.create = function (options) {
+    return Ctor(options)
+}
+
+Reve.component = function (id, options) {
+    var c = Ctor(options)
+    _components[id] = c
+    return c
+}
+
 function Directive(vm, tar, def, name, expr) {
     var d = this
     var bindParams = []
@@ -85,145 +227,6 @@ function Directive(vm, tar, def, name, expr) {
     // ([property-name], expression-value, expression) 
     bind && bind.apply(d, bindParams, expr)
     upda && upda.call(d, prev)
-}
-
-function Reve(options) {
-    var vm = this
-    var NS = conf.namespace
-
-    var $directives = this.$directives = []
-    this.$update = function () {
-        this.$directives.forEach(function (d) {
-            d.$update()
-        })
-    }
-    var el = options.el
-    /**
-     *  Mounted element detect
-     */
-    if (el && options.template) {
-        el.innerHTML = options.template
-    } else if (options.template) {
-        el = document.createElement('div')
-        el.innerHTML = options.template
-    } else if (util.type(el) == 'string') {
-        el = document.querySelector(el)
-    } else if (!is.Element(el)) {
-        throw new Error('Unmatch el option')
-    }
-
-    var _ready = options.ready
-    var _created = options.created
-    var _destroy = options.destroy
-
-    this.$methods = {}
-    this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
-    this.$refs = {}
-
-    util.objEach(options.methods, function (key, m) {
-        vm.$methods[key] = vm[key] = m.bind(vm)
-    })
-
-    _created && _created.call(vm)
-
-    var componentDec = NS + 'component'
-    var componentSel = '[' + componentDec + ']'
-    el.removeAttribute(componentDec)
-    var grandChilds = util.slice(el.querySelectorAll(componentSel + ' ' + componentSel))
-    var childs = util.slice(el.querySelectorAll(componentSel))
-    // TBD
-    // nested component
-    childs.forEach(function (tar) {
-        // prevent cross level component parse and repeat parse
-        if (tar._component || ~grandChilds.indexOf(tar)) return
-
-        var cname = tar.getAttribute(componentDec)
-        if (!cname) {
-            return console.error(componentDec + ' missing component id.')
-        }
-        var Component = _components[cname]
-        if (!Component) {
-            return console.error(componentDec + ' not found.')
-        }
-
-        var refid = tar.getAttribute(NS + 'ref')
-        var cdata = tar.getAttribute(NS + 'data')
-        var cmethods = tar.getAttribute(NS + 'methods')
-        var data = {}
-        var methods = {}
-        if (cdata) {
-            data = _execLiteral(cdata, this)            
-        }
-        if (cmethods) {
-            methods = _execLiteral(cmethods, this)
-        }
-        tar._component = componentDec
-        var c = new Component({
-            el: tar,
-            data: data,
-            methods: methods
-        })
-        if (refid) {
-            this.$refs[refid] = c
-        }
-    }.bind(this))
-
-    Object.keys(buildInDirectives).forEach(function (dname) {
-        var def = buildInDirectives[dname]
-        dname = NS + dname
-        var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
-        if (el.hasAttribute(dname)) bindingDrts.unshift(el)
-        bindingDrts.forEach(function (tar) {
-
-            var drefs = tar._diretives || []
-            var expr = tar.getAttribute(dname) || ''
-            // prevent repetitive binding
-            if (drefs && ~drefs.indexOf(dname)) return
-            var sep = util.directiveSep
-            var d
-            if (def.multi && expr.match(sep)) {
-                // multiple defines expression parse
-                _strip(expr)
-                    .split(sep)
-                    .forEach(function(item) {
-                        // discard empty expression 
-                        if (!item.trim()) return
-                        d = new Directive(vm, tar, def, dname, '{' + item + '}')
-                    })
-            } else {
-                d = new Directive(vm, tar, def, dname, expr)
-            }
-            $directives.push(d)
-            drefs.push(dname)
-            tar._diretives = drefs
-        })
-    })
-
-    _ready && _ready.call(vm)
-}
-
-function Ctor (options) {
-    var baseMethods = options.methods
-    function Class (opts) {
-        var baseData = options.data ? options.data() : {}
-        var instanOpts = util.extend({}, options, opts)
-        typeof(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
-        instanOpts.methods = util.extend({}, baseMethods, instanOpts.methods)
-        instanOpts.data = util.extend({}, baseData, instanOpts.data)
-        Reve.call(this, instanOpts)
-    }
-    Class.prototype = Reve.prototype
-    return Class
-}
-
-Reve.create = function (options) {
-    return Ctor(options)
-}
-
-Reve.component = function (id, options) {
-    var c = Ctor(options)
-    _components[id] = c
-    return c
 }
 
 module.exports = Reve
