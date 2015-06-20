@@ -184,16 +184,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _created && _created.call(vm)
 
 	    var componentDec = NS + 'component'
+	    var componentSel = '[' + componentDec + ']'
+	    el.removeAttribute(componentDec)
+	    var grandChilds = util.slice(el.querySelectorAll(componentSel + ' ' + componentSel))
+	    var childs = util.slice(el.querySelectorAll(componentSel))
+	    // TBD
 	    // nested component
-	    util.slice(el.querySelectorAll('[' + componentDec + ']')).forEach(function (tar) {
+	    childs.forEach(function (tar) {
 	        var cname = tar.getAttribute(componentDec)
 	        if (!cname) {
 	            return console.error(componentDec + ' missing component id.')
 	        }
+	        if (tar._component || ~grandChilds.indexOf(tar)) return
 	        var Component = _components[cname]
 	        if (!Component) {
 	            return console.error(componentDec + ' not found.')
 	        }
+	        tar._component = componentDec
 	        var c = new Component({
 	            el: tar
 	        })

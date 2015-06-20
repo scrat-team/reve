@@ -12,6 +12,7 @@
 	<div id="app" r-show="{show}" r-class="{hl: hl}">
 		<div r-component="c-header" r-ref="header">
 			<center r-html="{title}"></center>
+			<button r-component="c-button" style="float:right" r-ref="button">Home</button>
 		</div>
 		
 		<h1>Hello world</h1>
@@ -29,6 +30,11 @@
 			},
 			ready: function () {
 				console.log('c-header mount')
+			}
+		})
+		Reve.component('c-button' ,{
+			ready: function () {
+				console.log('c-button mount')
 			}
 		})
 		var $app = new Reve({
