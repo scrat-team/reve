@@ -90,12 +90,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var _created = options.created
 	    var _destroy = options.destroy
 	    var _shouldUpate = options.shouldUpdate
-
 	    var $directives = this.$directives = []
+	    var $components = []
+
 	    this.$update = function () {
 	        // should update return false will stop UI update
 	        if (_shouldUpate && _shouldUpate() == false) return
-	        
+	        // update child components
+	        $components.forEach(function (c) {
+	            c.$update()
+	        })
+	        // update directive of the VM
 	        this.$directives.forEach(function (d) {
 	            d.$update()
 	        })
@@ -127,7 +132,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    var componentDec = NS + 'component'
 	    var componentSel = '[' + componentDec + ']'
+
 	    el.removeAttribute(componentDec)
+
 	    var grandChilds = util.slice(el.querySelectorAll(componentSel + ' ' + componentSel))
 	    var childs = util.slice(el.querySelectorAll(componentSel))
 	    // nested component
@@ -164,6 +171,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (refid) {
 	            this.$refs[refid] = c
 	        }
+	        var _$update = c.$update
+	        c.$update = function () {
+	            util.extend(c.$data, _execLiteral(cdata, vm))
+	            _$update.apply(c, arguments)
+	        }
+	        $components.push(c)
 	    }.bind(this))
 
 	    Object.keys(buildInDirectives).forEach(function (dname) {
@@ -171,6 +184,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var def = buildInDirectives[dname]
 	        dname = NS + dname
 	        var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
+
 	        if (el.hasAttribute(dname)) bindingDrts.unshift(el)
 	        bindingDrts.forEach(function (tar) {
 
@@ -703,7 +717,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 	    'on': {
 	        multi: true,
-	        watch: false,
 	        bind: function(evtType, handler, expression) {
 	            this._expr = expression
 	            this.type = evtType

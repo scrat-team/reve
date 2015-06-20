@@ -2,30 +2,49 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="format-detection" content="telphone=no, email=no" />
 	<title>REVE</title>
 	<script src="../dist/reve.js"></script>
 	<style>
-		.hl {font-size: 20px;color: cornflowerblue}
-		body {padding: 0px}
+		body {padding: 0px;margin: 0;}
+		.hl {color: cornflowerblue}
+		.c-header {background-color: #f0f0f0;line-height: 40px;position: relative;}
+			.c-header .c-button {position: absolute;top: 10px;height: 20px;right: 5px;}
+		.content {text-align: center;}
+		.button-group {text-align: center;}
+			.button-group button {line-height: 28px;color: white;background-color: cornflowerblue;border: 0;padding: 6px;
+				outline: 0;border-radius: 4px;margin: 5px;}
 	</style>
 </head>
 <body>
 	<div id="app" r-show="{show}" r-class="{hl: hl}">
-		<div r-component="c-header" 
+		<div class="c-header" 
+			r-component="c-header" 
 			r-ref="header"
 			r-data="{
-				title: 'Hi, Reve'
+				title: header
 			}"
 		>
 			<center r-html="{title}"></center>
-			<button r-component="c-button" style="float:right" r-ref="button">Home</button>
+			<button class="c-button" 
+				r-component="c-button" 
+				r-ref="button"
+			>Home</button>
 		</div>
 		
-		<h1>Hello world</h1>
+		<h1 class="content">Hello world</h1>
+		<div class="button-group">
+			<button r-on="{
+				click: onDisableHightlight
+			}">disable hightlight</button>
 
-		<button r-on="{
-			click: onClick
-		}">Click event binding</button>
+			<button r-on="{
+				click: onChangeHeader
+			}">change child component's title</button>
+		</div>
 	</div>
 	<script>
 		Reve.component('c-header' ,{
@@ -35,12 +54,10 @@
 				}
 			},
 			ready: function () {
-				console.log('c-header mount')
 			}
 		})
 		Reve.component('c-button' ,{
 			ready: function () {
-				console.log('c-button mount')
 			}
 		})
 		var $app = new Reve({
@@ -49,21 +66,23 @@
 				return {
 					show: true,
 					hl: true,
+					header: 'Hi, Reve'
 				}
 			},
 			ready: function () {
-				this.$refs
+				console.log(this.$refs)
 			},
 			methods: {
-				onClick: function () {
-					alert('click it will disable hightlight')
+				onDisableHightlight: function () {
 					this.$data.hl = false
+					this.$update()
+				},
+				onChangeHeader: function () {
+					this.$data.header = 'Hi, fouber'
 					this.$update()
 				}
 			}
 		})
-
-		console.log($app)
 	</script>
 </body>
 </html>
