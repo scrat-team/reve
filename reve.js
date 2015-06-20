@@ -87,7 +87,7 @@ function Reve(options) {
         }
         var Component = _components[cname]
         if (!Component) {
-            return console.error(componentDec + ' not found.')
+            return console.error('Component \'' + cname + '\' not found.')
         }
 
         var refid = tar.getAttribute(NS + 'ref')
