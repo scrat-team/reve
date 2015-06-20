@@ -78,6 +78,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            .match(/^\{([\s\S]*)\}$/m)[1]
 	            .replace(/^- /, '')
 	}
+	function _execLiteral (expr, vm) {
+	    if (!_isExpr(expr)) return {}
+	    return _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','))
+	}
 
 	function Directive(vm, tar, def, name, expr) {
 	    var d = this
@@ -191,22 +195,35 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // TBD
 	    // nested component
 	    childs.forEach(function (tar) {
+	        // prevent cross level component parse and repeat parse
 	        if (tar._component || ~grandChilds.indexOf(tar)) return
-	        
+
 	        var cname = tar.getAttribute(componentDec)
 	        if (!cname) {
-	            console.log(tar, el)
 	            return console.error(componentDec + ' missing component id.')
 	        }
 	        var Component = _components[cname]
 	        if (!Component) {
 	            return console.error(componentDec + ' not found.')
 	        }
+
+	        var refid = tar.getAttribute(NS + 'ref')
+	        var cdata = tar.getAttribute(NS + 'data')
+	        var cmethods = tar.getAttribute(NS + 'methods')
+	        var data = {}
+	        var methods = {}
+	        if (cdata) {
+	            data = _execLiteral(cdata, this)            
+	        }
+	        if (cmethods) {
+	            methods = _execLiteral(cmethods, this)
+	        }
 	        tar._component = componentDec
 	        var c = new Component({
-	            el: tar
+	            el: tar,
+	            data: data,
+	            methods: methods
 	        })
-	        var refid = tar.getAttribute(NS + 'ref')
 	        if (refid) {
 	            this.$refs[refid] = c
 	        }
@@ -252,8 +269,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var baseData = options.data ? options.data() : {}
 	        var instanOpts = util.extend({}, options, opts)
 	        typeof(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
-	        util.extend({}, instanOpts.methods, baseMethods)
-	        util.extend({}, instanOpts.data, baseData)
+	        instanOpts.methods = util.extend({}, baseMethods, instanOpts.methods)
+	        instanOpts.data = util.extend({}, baseData, instanOpts.data)
 	        Reve.call(this, instanOpts)
 	    }
 	    Class.prototype = Reve.prototype

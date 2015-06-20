@@ -10,7 +10,12 @@
 </head>
 <body>
 	<div id="app" r-show="{show}" r-class="{hl: hl}">
-		<div r-component="c-header" r-ref="header">
+		<div r-component="c-header" 
+			r-ref="header"
+			r-data="{
+				title: 'Hi, Reve'
+			}"
+		>
 			<center r-html="{title}"></center>
 			<button r-component="c-button" style="float:right" r-ref="button">Home</button>
 		</div>
@@ -25,7 +30,7 @@
 		Reve.component('c-header' ,{
 			data: function () {
 				return {
-					title: 'Hi, Reve'
+					title: ''
 				}
 			},
 			ready: function () {
