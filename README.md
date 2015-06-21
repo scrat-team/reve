@@ -3,8 +3,8 @@ Declarative DOM manipulations. Play happy with server-side render architecture, 
 
 ## Downloads
 
-[reve.js](https://raw.githubusercontent.com/switer/reve/master/dist/reve.js)
-[reve.min.js](https://raw.githubusercontent.com/switer/reve/master/dist/reve.min.js)
+- [reve.js](https://raw.githubusercontent.com/switer/reve/master/dist/reve.js)
+- [reve.min.js](https://raw.githubusercontent.com/switer/reve/master/dist/reve.min.js)
 
 ## Guide
 
@@ -31,7 +31,7 @@ var $app = new Reve({
 	},
 	ready: function () {
 		// ... do something when instance compele ...
-	}
+	},
 	methods: {
 		// ... define methods of the ViewModel ...
 	}
