@@ -30,7 +30,7 @@ function Reve(options) {
     var _destroy = options.destroy
     var _shouldUpate = options.shouldUpdate
     var $directives = this.$directives = []
-    var $components = []
+    var $components = this.$components = []
 
     this.$update = function () {
         // should update return false will stop UI update
@@ -59,6 +59,8 @@ function Reve(options) {
         throw new Error('Unmatch el option')
     }
 
+    this.$el = el
+
     this.$methods = {}
     this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
     this.$refs = {}
@@ -69,14 +71,25 @@ function Reve(options) {
 
     _created && _created.call(vm)
 
+    this.$compile(el)
+
+    _ready && _ready.call(vm)
+}
+
+Reve.prototype.$compile = function (el) {
+    if (util.type(el) == 'string') el = _fragmentWrap(el)
+
+    var NS = conf.namespace
+    var $directives = this.$directives
+    var $components = this.$components
     var componentDec = NS + 'component'
     var componentSel = '[' + componentDec + ']'
+    var vm = this
 
-    el.removeAttribute(componentDec)
-
+    // nested component
     var grandChilds = util.slice(el.querySelectorAll(componentSel + ' ' + componentSel))
     var childs = util.slice(el.querySelectorAll(componentSel))
-    // nested component
+
     childs.forEach(function (tar) {
         // prevent cross level component parse and repeat parse
         if (tar._component || ~grandChilds.indexOf(tar)) return
@@ -95,6 +108,13 @@ function Reve(options) {
         var cmethods = tar.getAttribute(NS + 'methods')
         var data = {}
         var methods = {}
+
+        // remove 'r-component' attribute
+        tar.removeAttribute(componentDec)
+        ;['ref','data', 'methods'].forEach(function (a) {
+            tar.removeAttribute(NS + a)
+        })
+
         if (cdata) {
             data = _execLiteral(cdata, this)            
         }
@@ -102,6 +122,7 @@ function Reve(options) {
             methods = _execLiteral(cmethods, this)
         }
         tar._component = componentDec
+        
         var c = new Component({
             el: tar,
             data: data,
@@ -116,21 +137,25 @@ function Reve(options) {
             _$update.apply(c, arguments)
         }
         $components.push(c)
-    }.bind(this))
 
+    }.bind(this))
+    
+    // compile directive of the VM
     Object.keys(buildInDirectives).forEach(function (dname) {
 
         var def = buildInDirectives[dname]
         dname = NS + dname
         var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
+        // compile directive of container 
+        if (el.hasAttribute && el.hasAttribute(dname)) bindingDrts.unshift(el)
 
-        if (el.hasAttribute(dname)) bindingDrts.unshift(el)
         bindingDrts.forEach(function (tar) {
 
             var drefs = tar._diretives || []
             var expr = tar.getAttribute(dname) || ''
             // prevent repetitive binding
             if (drefs && ~drefs.indexOf(dname)) return
+            tar.removeAttribute(dname)
             var sep = util.directiveSep
             var d
             if (def.multi && expr.match(sep)) {
@@ -151,8 +176,9 @@ function Reve(options) {
         })
     })
 
-    _ready && _ready.call(vm)
+    return el
 }
+
 
 function Ctor (options) {
     var baseMethods = options.methods
@@ -241,6 +267,17 @@ function Directive(vm, tar, def, name, expr) {
     // ([property-name], expression-value, expression) 
     bind && bind.apply(d, bindParams, expr)
     upda && upda.call(d, prev)
+}
+
+function _fragmentWrap (html) {
+    var div = document.createElement('div')
+    var frag = document.createDocumentFragment();
+    div.innerHTML = html
+    var children = div.childNodes;
+    while(children.length){
+        frag.appendChild(children[0]);
+    }
+    return frag
 }
 
 module.exports = Reve
