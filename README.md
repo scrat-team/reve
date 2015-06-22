@@ -151,7 +151,7 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 		</div>
 	</div>
 	```
-	And then, instance it and parent VM:
+	It will be instanced when instance parent VM:
 	```js
 	var app = new Reve({
 		el: '#app'
@@ -168,7 +168,7 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 - **r-ref**
 	Add a reference of the component instance to parent component instance.
-	> Notice: Only work with 'r-component'.
+	> Notice: work with "r-component" only.
 
 	```html
 	<div r-component="header" r-ref="header"></div>
@@ -180,12 +180,40 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 - **r-data**
 	Passing and binding data from parent VM to child component.
-	> Notice: Only work with 'r-component'.
+	> Notice: work with "r-component" only.
 	
 
-- **r-method**
+- **r-methods**
 	Passing methods from parent VM to child component.
-	> Notice: Only work with 'r-component'.
+	> Notice: work with "r-component" only.
+
+#### Class Methods
+
+- Reve(options)
+- Reve.create(options)
+- Reve.component(options)
+
+#### Instance Options
+
+- el <HTMLElement> | <String> 
+- template <String>
+- data <Function>
+- methods <Object>
+- ready <Function>
+- created <Function>
+
+#### Instance Properties
+
+- $el <HTMLElement>
+- $data <Object>
+- $methods <Object>
+- $refs <Object>
+- $directives <Object>
+
+#### Instance Methods
+
+- $update()
+- $compile(HTMLElement | String)
 
 ## License
 
