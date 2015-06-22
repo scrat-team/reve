@@ -193,32 +193,73 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 #### Class Methods
 
-- **Reve(options)**
-- **Reve.create(options)**
-- **Reve.component(options)**
+- **Reve**(options)
+	Create a ViewModel instance.
+
+- **Reve.create**(options)
+	Create a ViewModel Class.
+
+- **Reve.component**(id, options)
+	Create a ViewModel Class and assign `id`. So the ViewMode can be found with `r-component`
+
 
 #### Instance Options
 
 - **el** `<HTMLElement>` | `<String>`
+	The root `Element` or element `Selector` of the ViewModel. 
+
 - **template** `<String>`
+	Replace ViewModel element's innerHTML with template, if el is not given, Reve will create a div element with the `template` innerHTML
+
 - **data** `<Function>`
+	Get default ViewModel's data, `data` is a method that should return an object.
+
 - **methods** `<Object>`
-- **ready** `<Function>`
+	Specified methods of the ViewModel those can be use in directive's expression and be accessed by the ViewModel instance as property directly:
+	```
+	methods: {
+		show: function () {
+			// to do something
+		}
+	},
+	ready: function () {
+		this.show() // accessing as method property
+	}
+	```
 - **created** `<Function>`
+	**created** is a **LifeCycle Method** of ViewModel. It will be call before compiling directives of the ViewModel.
+
+- **ready** `<Function>`
+	**ready** is a **LifeCycle Method** of ViewModel. It will be call after all directives of the ViewModel are compiled.
+
 
 #### Instance Properties
 
 - **$el** `<HTMLElement>`
+	The root element of the ViewModel instance.
+
 - **$data** `<Object>`
+	The data object of the ViewModel instance.
+
 - **$methods** `<Object>`
+	The methods option object of the ViewModel 
+
 - **$refs** `<Object>`
+	All child component instance those have declared the reference id with `r-ref`.
+
 - **$directives** `<Object>`
+	All directives those not contain child component's directives of the ViewModel.
 
 
 #### Instance Methods
 
-- **$update()**
-- **$compile(HTMLElement | String)**
+- **$update**()
+	Call the method manually to update UI View when data of the ViewModel instance has been changed.
+
+- **$compile**(`HTMLElement` | `String`)
+	* return `<HTMLElement> | <DocumentFragment>` if param typeof `String`, it will be a documentfragment, otherwise will return HTMLElement.
+
+	Compile all directives of the HTMLElement or HTML template in current ViewModel. It's useful when load something async then append to current ViewModel's DOM Tree.
 
 ## License
 
