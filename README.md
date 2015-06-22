@@ -84,7 +84,7 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 	Add className to the element when value is true, Otherwise remove that class.
 	such as: 
 	```html
-	<span v-class="{
+	<span r-class="{
 	  red    : hasError;
 	  bold   : isImportant;
 	  hidden : isHidden;
@@ -92,15 +92,99 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 	```
 
 - **r-style**
-	
+	Set inline style to element.
+	```html
+	<span r-class="{
+	  display    : show ? '':'none'
+	}"></span>
+	```
 
 - **r-attr**
+	Update element's attribute by binding data.
+	```html
+	<img r-attr="{src: imgUrl || './default.png'}" alt="">
+	```
+
 - **r-on**
+	Add event listener to the element, such as add a "click" and "toucstart" events to the button element:
+	```html
+	<button 
+		r-on="{
+			click: onClick;
+			touchstart: onTouchStart;
+		}"
+	></button>
+	```
+
 - **r-html**
+	Update element's innerHTML by binding data.
+
 - **r-component**
+	Compile the element as Child component and instance it by component id.
+	Assume we have defined a component with state "title" and method "capitalize", as below:
+	```js
+	Reve.component('header', {
+		data: function () {
+			return {
+				title: ''
+			}
+		},
+		methods: {
+			capitalize: function (str) {
+				var initial = str[0]
+				return initial.towUpperCase() + str.slice(1)
+			}
+		}
+	})
+	```
+	And component's DOM as below:
+	```html
+	<div id="app">
+		<div r-component="header" 
+			r-data="{
+				title: "hi, reve"
+			}""
+		>
+			<span r-html="{capitalize(title)}"></span>
+		</div>
+	</div>
+	```
+	And then, instance it and parent VM:
+	```js
+	var app = new Reve({
+		el: '#app'
+	})
+	```
+	Render result:
+	```html
+	<div id="app">
+		<div>
+			<span>Hi, reve</span>
+		</div>
+	</div>
+	```
+
 - **r-ref**
+	Add a reference of the component instance to parent ViewModel's.**Only work with 'r-component'**.
+	```html
+	<div r-component="header" r-ref="header"></div>
+	```
+	We can access the header component instance refernce by parent VM's **$refs** property:
+	```js
+	app.$refs.header.$data.title // 'hi, reve'
+	```
+
 - **r-data**
+	Passing and binding data from parent VM to child component.**Only work with 'r-component'**.
+	
+
 - **r-method**
+	Passing methods from parent VM to child component.**Only work with 'r-component'**.
+
+## License
+
+MIT
+
 
 
 

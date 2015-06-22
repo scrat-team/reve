@@ -115,7 +115,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        el = document.createElement('div')
 	        el.innerHTML = options.template
 	    } else if (util.type(el) == 'string') {
-	        el = document.querySelector(el)
+	        var sel = el
+	        el = document.querySelector(sel)
+	        if (!el) return console.error('Can\'t not found element by selector "' + sel + '"')
 	    } else if (!is.Element(el)) {
 	        throw new Error('Unmatch el option')
 	    }
