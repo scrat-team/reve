@@ -195,20 +195,20 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 #### Instance Options
 
-- **el <HTMLElement> | <String>**
-- **template <String>**
-- **data <Function>**
-- **methods <Object>**
-- **ready <Function>**
-- **created <Function>**
+- **el \<HTMLElement\> | \<String\>**
+- **template \<String\>**
+- **data \<Function\>**
+- **methods \<Object\>**
+- **ready \<Function\>**
+- **created \<Function\>**
 
 #### Instance Properties
 
-- **$el <HTMLElement>**
-- **$data <Object>**
-- **$methods <Object>**
-- **$refs <Object>**
-- **$directives <Object>**
+- **$el \<HTMLElement\>**
+- **$data \<Object\>**
+- **$methods \<Object\>**
+- **$refs \<Object\>**
+- **$directives \<Object\>**
 
 
 #### Instance Methods
