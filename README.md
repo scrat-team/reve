@@ -168,7 +168,9 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 - **r-ref**
 	Add a reference of the component instance to parent component instance.
+
 	**Notice:** Only work with 'r-component'.
+
 	```html
 	<div r-component="header" r-ref="header"></div>
 	```
@@ -179,11 +181,13 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 - **r-data**
 	Passing and binding data from parent VM to child component.
+
 	**Notice:** Only work with 'r-component'.
 	
 
 - **r-method**
 	Passing methods from parent VM to child component.
+	
 	**Notice:** Only work with 'r-component'.
 
 ## License
