@@ -213,7 +213,7 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 - **Reve.component**(id, options)
 
-	Create a ViewModel Class and assign `id`. So the ViewMode can be found with `r-component`
+	Create a ViewModel Class and assign it with specified `id`. it's `r-component`'s value.
 
 
 #### Instance Options
