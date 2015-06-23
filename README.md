@@ -227,10 +227,14 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 	}
 	```
 - **created** `<Function>`
-	**created** is a **LifeCycle Method** of ViewModel. It will be call before compiling directives of the ViewModel.
+	**Lifecycle Method** It will be called before compiling directives of the ViewModel.
 
 - **ready** `<Function>`
-	**ready** is a **LifeCycle Method** of ViewModel. It will be call after all directives of the ViewModel are compiled.
+	**Lifecycle Method** It will be called after all directives of the ViewModel are compiled.
+
+- **shouldUpdate** `<Function>`
+	**Lifecycle Method** It will be called after each times calling `$update` method, 
+	return `false` will stop current ViewModel to update UI.
 
 
 #### Instance Properties

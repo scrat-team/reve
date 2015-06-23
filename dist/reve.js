@@ -70,19 +70,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _components = {}
 	var _did = 0
 
-	function _isExpr(c) {
-	    return c ? !!c.trim().match(/^\{[\s\S]*?\}$/m) : false
-	}
-	function _strip (expr) {
-	    return expr.trim()
-	            .match(/^\{([\s\S]*)\}$/m)[1]
-	            .replace(/^- /, '')
-	}
-	function _execLiteral (expr, vm) {
-	    if (!_isExpr(expr)) return {}
-	    return _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','))
-	}
-
+	/**
+	 * Constructor Function and Class.
+	 * @param {Object} options Instance options
+	 * @return {Object} Reve component instance
+	 */
 	function Reve(options) {
 	    var vm = this
 	    var NS = conf.namespace
@@ -105,6 +97,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            d.$update()
 	        })
 	    }
+
 	    var el = options.el
 	    /**
 	     *  Mounted element detect
@@ -123,9 +116,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    this.$el = el
-
 	    this.$methods = {}
-	    this.$data = (typeof(options.data) == 'function' ? options.data():options.data) || {}
+	    this.$data = (util.type(options.data) == 'function' ? options.data():options.data) || {}
 	    this.$refs = {}
 
 	    util.objEach(options.methods, function (key, m) {
@@ -139,6 +131,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _ready && _ready.call(vm)
 	}
 
+	/**
+	 * Compile all directives of the HTMLElement or HTML template in current ViewModel. 
+	 * It's useful when load something async then append to current ViewModel's DOM Tree.
+	 * @param  {Element} | {String} el The HTMLElement of HTML template need to compile
+	 * @return {Element} | {DocumentFragment}
+	 */
 	Reve.prototype.$compile = function (el) {
 	    if (util.type(el) == 'string') el = _fragmentWrap(el)
 
@@ -157,7 +155,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // prevent cross level component parse and repeat parse
 	        if (tar._component || ~grandChilds.indexOf(tar)) return
 
-	        var cname = tar.getAttribute(componentDec)
+	        var cname = _getAttribute(tar, componentDec)
 	        if (!cname) {
 	            return console.error(componentDec + ' missing component id.')
 	        }
@@ -166,16 +164,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return console.error('Component \'' + cname + '\' not found.')
 	        }
 
-	        var refid = tar.getAttribute(NS + 'ref')
-	        var cdata = tar.getAttribute(NS + 'data')
-	        var cmethods = tar.getAttribute(NS + 'methods')
+	        var refid = _getAttribute(tar, NS + 'ref')
+	        var cdata = _getAttribute(tar, NS + 'data')
+	        var cmethods = _getAttribute(tar, NS + 'methods')
 	        var data = {}
 	        var methods = {}
 
 	        // remove 'r-component' attribute
-	        tar.removeAttribute(componentDec)
+	        _removeAttribute(tar, componentDec)
 	        ;['ref','data', 'methods'].forEach(function (a) {
-	            tar.removeAttribute(NS + a)
+	            _removeAttribute(tar, NS + a)
 	        })
 
 	        if (cdata) {
@@ -194,9 +192,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (refid) {
 	            this.$refs[refid] = c
 	        }
+	        /**
+	         * Hook component instance update method, sync passing data before update.
+	         * @type {[type]}
+	         */
 	        var _$update = c.$update
 	        c.$update = function () {
-	            util.extend(c.$data, _execLiteral(cdata, vm))
+	            cdata && util.extend(c.$data, _execLiteral(cdata, vm))
 	            _$update.apply(c, arguments)
 	        }
 	        $components.push(c)
@@ -215,10 +217,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        bindingDrts.forEach(function (tar) {
 
 	            var drefs = tar._diretives || []
-	            var expr = tar.getAttribute(dname) || ''
+	            var expr = _getAttribute(tar, dname) || ''
 	            // prevent repetitive binding
 	            if (drefs && ~drefs.indexOf(dname)) return
-	            tar.removeAttribute(dname)
+	            _removeAttribute(tar, dname)
 	            var sep = util.directiveSep
 	            var d
 	            if (def.multi && expr.match(sep)) {
@@ -242,13 +244,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return el
 	}
 
-
+	/**
+	 * Create Reve subc-lass that inherit Reve
+	 * @param {Object} options Reve instance options
+	 * @return {Function} sub-lass of Reve
+	 */
 	function Ctor (options) {
 	    var baseMethods = options.methods
 	    function Class (opts) {
 	        var baseData = options.data ? options.data() : {}
 	        var instanOpts = util.extend({}, options, opts)
-	        typeof(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
+	        util.type(instanOpts.data) == 'function' && (instanOpts.data = instanOpts.data())  
 	        instanOpts.methods = util.extend({}, baseMethods, instanOpts.methods)
 	        instanOpts.data = util.extend({}, baseData, instanOpts.data)
 	        Reve.call(this, instanOpts)
@@ -256,17 +262,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    Class.prototype = Reve.prototype
 	    return Class
 	}
-
 	Reve.create = function (options) {
 	    return Ctor(options)
 	}
-
 	Reve.component = function (id, options) {
 	    var c = Ctor(options)
 	    _components[id] = c
 	    return c
 	}
 
+	/**
+	 * Abstract direcitve
+	 * @param {Reve}    vm      Reve instance
+	 * @param {Element} tar     Target DOM of the direcitve
+	 * @param {Object}  def     Directive definition
+	 * @param {String}  name    Attribute name of the directive
+	 * @param {String}  expr    Attribute value of the directive
+	 */
 	function Directive(vm, tar, def, name, expr) {
 	    var d = this
 	    var bindParams = []
@@ -332,6 +344,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	    upda && upda.call(d, prev)
 	}
 
+	function _isExpr(c) {
+	    return c ? !!c.trim().match(/^\{[\s\S]*?\}$/m) : false
+	}
+	function _strip (expr) {
+	    return expr.trim()
+	            .match(/^\{([\s\S]*)\}$/m)[1]
+	            .replace(/^- /, '')
+	}
+	function _execLiteral (expr, vm) {
+	    if (!_isExpr(expr)) return {}
+	    return _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','))
+	}
+	function _getAttribute (el, an) {
+	    return el && el.getAttribute(an)
+	}
+	function _removeAttribute (el, an) {
+	    return el && el.removeAttribute(an)
+	}
 	function _fragmentWrap (html) {
 	    var div = document.createElement('div')
 	    var frag = document.createDocumentFragment();
@@ -387,7 +417,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	function hasOwn (obj, prop) {
 	    return obj && obj.hasOwnProperty(prop)
 	}
-
 
 	var util = {
 	    type: function(obj) {

@@ -54,6 +54,11 @@
 				}
 			},
 			ready: function () {
+				this.title = this.$data.title
+			},
+			shouldUpdate: function () {
+				if (this.$data.title == this.title) return false
+				this.title = this.$data.title
 			}
 		})
 		Reve.component('c-button' ,{
