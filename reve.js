@@ -20,13 +20,13 @@ function Reve(options) {
     var _ready = options.ready
     var _created = options.created
     var _destroy = options.destroy
-    var _shouldUpate = options.shouldUpdate
+    var _shouldUpdate = options.shouldUpdate
     var $directives = this.$directives = []
     var $components = this.$components = []
 
     this.$update = function () {
         // should update return false will stop UI update
-        if (_shouldUpate && _shouldUpate() == false) return
+        if (_shouldUpdate && _shouldUpdate.apply(vm, arguments) == false) return
         // update child components
         $components.forEach(function (c) {
             c.$update()
