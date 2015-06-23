@@ -111,6 +111,7 @@ Reve.prototype.$compile = function (el) {
 
         // remove 'r-component' attribute
         _removeAttribute(tar, componentDec)
+
         ;['ref','data', 'methods'].forEach(function (a) {
             _removeAttribute(tar, NS + a)
         })
@@ -149,6 +150,7 @@ Reve.prototype.$compile = function (el) {
 
         var def = buildInDirectives[dname]
         dname = NS + dname
+
         var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
         // compile directive of container 
         if (el.hasAttribute && el.hasAttribute(dname)) bindingDrts.unshift(el)
@@ -159,8 +161,10 @@ Reve.prototype.$compile = function (el) {
             var expr = _getAttribute(tar, dname) || ''
             // prevent repetitive binding
             if (drefs && ~drefs.indexOf(dname)) return
+
             _removeAttribute(tar, dname)
-            var sep = util.directiveSep
+
+            var sep = conf.directiveSep
             var d
             if (def.multi && expr.match(sep)) {
                 // multiple defines expression parse
@@ -228,7 +232,11 @@ function Directive(vm, tar, def, name, expr) {
     if (def.multi) {
         // extract key and expr from "key: expression" format
         var key
-        expr = expr.replace(/^[^:]+:/, function(m) {
+        var keyRE = /^[^:]+:/
+        if (!keyRE.test(expr)) {
+            return console.error('Invalid expression of "{' + expr + '}", it should be in this format: ' + name + '="{ key: expression }".')
+        }
+        expr = expr.replace(keyRE, function(m) {
             key = m.replace(/:$/, '').trim()
             return ''
         }).trim()
@@ -252,7 +260,7 @@ function Directive(vm, tar, def, name, expr) {
     })
 
     /**
-     *  execute wrap with directive name
+     *  execute wrap with directive name and current VM
      */
     function _exec(expr) {
         return _execute(vm, expr, name)

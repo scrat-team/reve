@@ -6,7 +6,7 @@ Declarative DOM manipulations. Play happy with server-side render architecture, 
 - [reve.js](https://raw.githubusercontent.com/switer/reve/master/dist/reve.js)
 - [reve.min.js](https://raw.githubusercontent.com/switer/reve/master/dist/reve.min.js)
 
-#### Examples
+## Examples
 
 - [HackerNews WebApp](https://github.com/switer/scrat-seo-reve-hackernews)
 
