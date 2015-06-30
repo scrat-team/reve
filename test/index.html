@@ -26,10 +26,13 @@
 			r-ref="header"
 			r-data="{
 				title: header;
+			}"
+			r-methods="{
 				onRefresh: onRefresh;
 			}"
+			r-autorefresh="{onRefresh}"
 		>
-			<center r-html="{title}" r-autorefresh="{onRefresh}"></center>
+			<center r-html="{title}"></center>
 			<button class="c-button" 
 				r-component="c-button" 
 				r-ref="button"
@@ -100,7 +103,7 @@
 				onRefresh: function (cb) {
 					setTimeout(function () {
 						cb()
-					}, 500)
+					}, 1000)
 				}
 			}
 		})
