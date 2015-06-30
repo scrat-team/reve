@@ -1,5 +1,5 @@
 /**
-* Reve v1.0.0
+* Reve v1.0.1
 * (c) 2015 guankaishe
 * Released under the MIT License.
 */
@@ -818,9 +818,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    try {
 	        return [null, util.immutable(eval('with($scope){(%s)}'.replace('%s', arguments[1])))]
 	    } catch (e) {
-	        arguments[1] = /^\{/.test(arguments[1]) 
-	                        ? '. ' + arguments[1]
-	                        : '. {' + arguments[1] + '}' // expr
+	        arguments[1] =  '. '+ arguments[2] + '=' + (/^\{/.test(arguments[1]) 
+	                                    ? arguments[1]
+	                                    : '{' + arguments[1] + '}') // expr
 	        // arguments[2] // label
 	        // arguments[3] // target
 	        switch (e.name) {
@@ -829,7 +829,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                break
 	            default:
 	                console.error(
-	                     (arguments[2] ? '\'' + arguments[2] + '\': ' : ''),
+	                    (arguments[2] ? '\'' + arguments[2] + '\': ' : ''),
 	                    e.message + arguments[1],
 	                    arguments[3] || ''
 	                )
