@@ -292,6 +292,39 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 	Compile all directives of the HTMLElement or HTML template in current ViewModel. It's useful when load something async then append to current ViewModel's DOM Tree.
 
+## Guide
+
+- **Custom Directive**
+Directive lifecycle methods:
+	- `bind` Call only once when init.
+	- `update` Call every time when expression's value has been changed.
+	- `unbind` Call only once before directive is destroyed.
+
+Directive instance properties:
+	- `$vm` Mounted VM of the directive
+	- `$el` Mounted target Node of the directive
+	- `$id` Current directive instance id
+
+Define a custom directive with `Reve.directive`, such as below example to define a "tap" directive:
+
+```html
+<div r-tap="{onClick}"></div>
+```
+
+```js
+Zect.directive('tap', {
+    bind: function (value, expression) {
+        // do something when init
+    },
+    update: function (value) {
+        // do something when state change or after init
+    },
+    unbind: function () {
+        // do something before destroy the directive instance
+    }
+})
+```
+
 ## License
 
 MIT
