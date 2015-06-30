@@ -294,19 +294,16 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 ## Guide
 
-- **Custom Directive**
-
+#### Custom Directive**
 Directive lifecycle methods:
-
-	* `bind` Call only once when init.
-	* `update` Call every time when expression's value has been changed.
-	* `unbind` Call only once before directive is destroyed.
+* `bind` Call only once when init.
+* `update` Call every time when expression's value has been changed.
+* `unbind` Call only once before directive is destroyed.
 
 Directive instance properties:
-
-	* `$vm` Mounted VM of the directive
-	* `$el` Mounted target Node of the directive
-	* `$id` Current directive instance id
+* `$vm` Mounted VM of the directive
+* `$el` Mounted target Node of the directive
+* `$id` Current directive instance id
 
 Define a custom directive with `Reve.directive`, such as below example to define a "tap" directive:
 
