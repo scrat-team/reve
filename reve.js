@@ -115,10 +115,10 @@ Reve.prototype.$compile = function (el) {
         })
 
         if (cdata) {
-            data = _execLiteral(cdata, this)            
+            data = _execLiteral(cdata, this, NS + 'data')            
         }
         if (cmethods) {
-            methods = _execLiteral(cmethods, this)
+            methods = _execLiteral(cmethods, this, NS + 'methods')
         }
         tar._component = componentDec
         
@@ -307,9 +307,9 @@ function _strip (expr) {
             .match(/^\{([\s\S]*)\}$/m)[1]
             .replace(/^- /, '')
 }
-function _execLiteral (expr, vm) {
+function _execLiteral (expr, vm, name) {
     if (!_isExpr(expr)) return {}
-    var r = _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ',')) 
+    var r = _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','), name) 
     return r[0] ? {} : r[1]
 }
 function _getAttribute (el, an) {
