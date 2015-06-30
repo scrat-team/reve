@@ -294,7 +294,8 @@ Directive is declarative DOM manipulation, such as "r-class" is the DOM manipula
 
 ## Guide
 
-#### Custom Directive**
+#### Custom Directive
+
 Directive lifecycle methods:
 * `bind` Call only once when init.
 * `update` Call every time when expression's value has been changed.
@@ -324,6 +325,8 @@ Zect.directive('tap', {
     }
 })
 ```
+
+More sample, [see test case](https://github.com/switer/reve/blob/master/test/index.html#L54)
 
 ## License
 
