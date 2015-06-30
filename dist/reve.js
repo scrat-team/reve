@@ -61,13 +61,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var util = __webpack_require__(3)
+	var util = __webpack_require__(1)
 	var conf = __webpack_require__(2)
-	var $ = __webpack_require__(4)
-	var is = __webpack_require__(1)
-	var _execute = __webpack_require__(5)
-	var buildInDirectives = __webpack_require__(6)
+	var is = __webpack_require__(3)
+	var buildInDirectives = __webpack_require__(4)
+	var _execute = __webpack_require__(6)
 	var _components = {}
+	var _globalDirectives = {}
 	var _did = 0
 
 	/**
@@ -77,23 +77,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	function Reve(options) {
 	    var vm = this
-	    var NS = conf.namespace
 	    var _ready = options.ready
 	    var _created = options.created
-	    var _destroy = options.destroy
 	    var _shouldUpdate = options.shouldUpdate
 	    var $directives = this.$directives = []
 	    var $components = this.$components = []
 
 	    this.$update = function () {
 	        // should update return false will stop UI update
-	        if (_shouldUpdate && _shouldUpdate.apply(vm, arguments) == false) return
+	        if (_shouldUpdate && _shouldUpdate.apply(vm, arguments) === false) return
 	        // update child components
 	        $components.forEach(function (c) {
 	            c.$update()
 	        })
 	        // update directive of the VM
-	        this.$directives.forEach(function (d) {
+	        $directives.forEach(function (d) {
 	            d.$update()
 	        })
 	    }
@@ -205,11 +203,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        $components.push(c)
 
 	    }.bind(this))
-	    
-	    // compile directive of the VM
-	    Object.keys(buildInDirectives).forEach(function (dname) {
 
-	        var def = buildInDirectives[dname]
+	    var _diretives = util.extend({}, buildInDirectives, _globalDirectives)
+	    // compile directives of the VM
+	    Object.keys(_diretives).forEach(function (dname) {
+
+	        var def = _diretives[dname]
 	        dname = NS + dname
 
 	        var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
@@ -274,6 +273,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _components[id] = c
 	    return c
 	}
+	Reve.directive = function (id, def) {
+	    _globalDirectives[id] = def
+	}
 
 	/**
 	 * Abstract direcitve
@@ -310,10 +312,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.$id = _did++
 
 	    var bind = def.bind
-	    var unbind = def.unbind
 	    var upda = def.update
 	    var prev
-	    var unwatch
 
 	    // set properties
 	    util.objEach(def, function(k, v) {
@@ -330,26 +330,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /**
 	     *  update handler
 	     */
-	    function _update(kp) {
+	    function _update() {
 	        var nexv = _exec(expr)
-	        if (util.diff(nexv, prev)) {
+	        if (!nexv[0] && util.diff(nexv[1], prev)) {
 	            var p = prev
-	            prev = nexv
-	            upda && upda.call(d, nexv, p, kp)
+	            prev = nexv[1]
+	            upda && upda.call(d, nexv[1], p, {})
 	        }
 	    }
 
 	    /**
 	     *  If expression is a string iteral, use it as value
 	     */
-	    prev = isExpr ? _exec(expr) : expr
+	    var hasError
+	    if (isExpr) {
+	        prev =  _exec(expr)
+	        hasError = prev[0]
+	        prev = prev[1]
+	    } else {
+	        prev = expr
+	    }
 	    bindParams.push(prev)
 	    bindParams.push(expr)
 	    d.$update = _update
 
 	    // ([property-name], expression-value, expression) 
 	    bind && bind.apply(d, bindParams, expr)
-	    upda && upda.call(d, prev)
+	    // error will stop update
+	    !hasError && upda && upda.call(d, prev)
 	}
 
 	function _isExpr(c) {
@@ -362,7 +370,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	function _execLiteral (expr, vm) {
 	    if (!_isExpr(expr)) return {}
-	    return _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','))
+	    var r = _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ',')) 
+	    return r[0] ? {} : r[1]
 	}
 	function _getAttribute (el, an) {
 	    return el && el.getAttribute(an)
@@ -386,32 +395,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	var conf = __webpack_require__(2)
-	module.exports = {
-	    Element: function(el) {
-	        return el instanceof HTMLElement || el instanceof DocumentFragment
-	    },
-	    DOM: function (el) {
-	        return this.Element(el) || el instanceof Comment
-	    }
-	}
-
-/***/ },
-/* 2 */
-/***/ function(module, exports) {
-
-	var conf = {
-		namespace: 'r-',
-		directiveSep: ';'
-	}
-
-	module.exports = conf
-
-/***/ },
-/* 3 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -494,7 +477,119 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = util
 
 /***/ },
+/* 2 */
+/***/ function(module, exports) {
+
+	var conf = {
+		namespace: 'r-',
+		directiveSep: ';'
+	}
+
+	module.exports = conf
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	module.exports = {
+	    Element: function(el) {
+	        return el instanceof HTMLElement || el instanceof DocumentFragment
+	    },
+	    DOM: function (el) {
+	        return this.Element(el) || el instanceof Comment
+	    }
+	}
+
+/***/ },
 /* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 *  Global Build-in Directives
+	 */
+
+	'use strict';
+
+	var $ = __webpack_require__(5)
+	var conf = __webpack_require__(2)
+	var util = __webpack_require__(1)
+
+	module.exports = {
+	    'attr': {
+	        multi: true,
+	        bind: function(attname) {
+	            this.attname = attname
+	            this._$el = $(this.$el)
+	        },
+	        update: function(next) {
+	            if (!next && next !== '') {
+	                this._$el.removeAttr(this.attname)
+	            } else {
+	                this._$el.attr(this.attname, next)
+	            }
+	        }
+	    },
+	    'class': {
+	        multi: true,
+	        bind: function(className) {
+	            this.className = className
+	            this._$el = $(this.$el)
+	        },
+	        update: function(next) {
+	            if (next) this._$el.addClass(this.className)
+	            else this._$el.removeClass(this.className)
+	        }
+	    },
+	    'html': {
+	        update: function(nextHTML) {
+	            this.$el.innerHTML = nextHTML
+	        }
+	    },
+	    'on': {
+	        multi: true,
+	        bind: function(evtType, handler, expression) {
+	            this._expr = expression
+	            this.type = evtType
+	        },
+	        update: function(handler) {
+	            this.unbind()
+
+	            var fn = handler
+	            if (util.type(fn) !== 'function')
+	                return console.warn('"' + conf.namespace + 'on" only accept function. {' + this._expr + '}')
+
+	            this.fn = fn.bind(this.$vm)
+	            $(this.$el).on(this.type, this.fn, false)
+
+	        },
+	        unbind: function() {
+	            if (this.fn) {
+	                $(this.$el).off(this.type, this.fn)
+	                this.fn = null
+	            }
+	        }
+	    },
+	    'show': {
+	        update: function(next) {
+	            this.$el.style.display = next ? '' : 'none'
+	        }
+	    },
+	    'style': {
+	        multi: true,
+	        bind: function(sheet) {
+	            this.sheet = sheet
+	        },
+	        update: function(next) {
+	            this.$el.style && (this.$el.style[this.sheet] = next)
+	        }
+	    }
+	}
+
+
+/***/ },
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -502,8 +597,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	'use strict';
-	var util = __webpack_require__(3)
-	var is = __webpack_require__(1)
+	var util = __webpack_require__(1)
+	var is = __webpack_require__(3)
 
 	function Selector(sel) {
 	    if (util.type(sel) == 'string') {
@@ -591,6 +686,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        el.className = classList.join(' ')
 	    })
 	    return this
+	}
+	proto.hasClass = function(clazz) {
+	    if (!this[0]) return false
+	    var classList = el.className.split(' ')
+	    return ~~classList.indexOf(clazz)
 	}
 	proto.each = function(fn) {
 	    this.forEach(fn)
@@ -697,14 +797,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 *  execute expression from template with specified Scope and ViewModel
 	 */
 
-	var util = __webpack_require__(3)
+	var util = __webpack_require__(1)
 	/**
 	 *  Calc expression value
 	 */
@@ -716,7 +816,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var $scope = util.extend({}, $vm.$methods, $vm.$data)
 
 	    try {
-	        return util.immutable(eval('with($scope){(%s)}'.replace('%s', arguments[1])))
+	        return [null, util.immutable(eval('with($scope){(%s)}'.replace('%s', arguments[1])))]
 	    } catch (e) {
 	        arguments[1] = /^\{/.test(arguments[1]) 
 	                        ? '. ' + arguments[1]
@@ -734,96 +834,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    arguments[3] || ''
 	                )
 	        }
-	        return ''
+	        return [e]
 	    }
 	}
 	module.exports = _execute
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 *  Global Build-in Directives
-	 */
-
-	'use strict';
-
-	var $ = __webpack_require__(4)
-	var conf = __webpack_require__(2)
-	var util = __webpack_require__(3)
-
-	module.exports = {
-	    'attr': {
-	        multi: true,
-	        bind: function(attname) {
-	            this.attname = attname
-	            this._$el = $(this.$el)
-	        },
-	        update: function(next) {
-	            if (!next && next !== '') {
-	                this._$el.removeAttr(this.attname)
-	            } else {
-	                this._$el.attr(this.attname, next)
-	            }
-	        }
-	    },
-	    'class': {
-	        multi: true,
-	        bind: function(className) {
-	            this.className = className
-	            this._$el = $(this.$el)
-	        },
-	        update: function(next) {
-	            if (next) this._$el.addClass(this.className)
-	            else this._$el.removeClass(this.className)
-	        }
-	    },
-	    'html': {
-	        update: function(nextHTML) {
-	            this.$el.innerHTML = nextHTML
-	        }
-	    },
-	    'on': {
-	        multi: true,
-	        bind: function(evtType, handler, expression) {
-	            this._expr = expression
-	            this.type = evtType
-	        },
-	        update: function(handler) {
-	            this.unbind()
-
-	            var fn = handler
-	            if (util.type(fn) !== 'function')
-	                return console.warn('"' + conf.namespace + 'on" only accept function. {' + this._expr + '}')
-
-	            this.fn = fn.bind(this.$vm)
-	            $(this.$el).on(this.type, this.fn, false)
-
-	        },
-	        unbind: function() {
-	            if (this.fn) {
-	                $(this.$el).off(this.type, this.fn)
-	                this.fn = null
-	            }
-	        }
-	    },
-	    'show': {
-	        update: function(next) {
-	            this.$el.style.display = next ? '' : 'none'
-	        }
-	    },
-	    'style': {
-	        multi: true,
-	        bind: function(sheet) {
-	            this.sheet = sheet
-	        },
-	        update: function(next) {
-	            this.$el.style && (this.$el.style[this.sheet] = next)
-	        }
-	    }
-	}
-
 
 /***/ }
 /******/ ])

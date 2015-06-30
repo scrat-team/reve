@@ -25,10 +25,11 @@
 			r-component="c-header" 
 			r-ref="header"
 			r-data="{
-				title: header
+				title: header;
+				onRefresh: onRefresh;
 			}"
 		>
-			<center r-html="{title}"></center>
+			<center r-html="{title}" r-autorefresh="{onRefresh}"></center>
 			<button class="c-button" 
 				r-component="c-button" 
 				r-ref="button"
@@ -47,6 +48,16 @@
 		</div>
 	</div>
 	<script>
+		Reve.directive('autorefresh', {
+			bind: function (fn) {
+				setInterval(function () {
+					this.$el.style.opacity = 0.2
+					fn(function () {
+						this.$el.style.opacity = 1
+					}.bind(this))
+				}.bind(this), 2000)
+			}
+		})
 		Reve.component('c-header' ,{
 			data: function () {
 				return {
@@ -75,7 +86,7 @@
 				}
 			},
 			ready: function () {
-				console.log(this.$refs)
+				// console.log(this.$refs)
 			},
 			methods: {
 				onDisableHightlight: function () {
@@ -85,6 +96,11 @@
 				onChangeHeader: function () {
 					this.$data.header = 'Hi, fouber'
 					this.$update()
+				},
+				onRefresh: function (cb) {
+					setTimeout(function () {
+						cb()
+					}, 500)
 				}
 			}
 		})

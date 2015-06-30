@@ -2,11 +2,11 @@
 
 var util = require('./lib/util')
 var conf = require('./lib/conf')
-var $ = require('./lib/dm')
 var is = require('./lib/is')
-var _execute = require('./lib/execute')
 var buildInDirectives = require('./lib/build-in')
+var _execute = require('./lib/execute')
 var _components = {}
+var _globalDirectives = {}
 var _did = 0
 
 /**
@@ -16,23 +16,21 @@ var _did = 0
  */
 function Reve(options) {
     var vm = this
-    var NS = conf.namespace
     var _ready = options.ready
     var _created = options.created
-    var _destroy = options.destroy
     var _shouldUpdate = options.shouldUpdate
     var $directives = this.$directives = []
     var $components = this.$components = []
 
     this.$update = function () {
         // should update return false will stop UI update
-        if (_shouldUpdate && _shouldUpdate.apply(vm, arguments) == false) return
+        if (_shouldUpdate && _shouldUpdate.apply(vm, arguments) === false) return
         // update child components
         $components.forEach(function (c) {
             c.$update()
         })
         // update directive of the VM
-        this.$directives.forEach(function (d) {
+        $directives.forEach(function (d) {
             d.$update()
         })
     }
@@ -144,11 +142,12 @@ Reve.prototype.$compile = function (el) {
         $components.push(c)
 
     }.bind(this))
-    
-    // compile directive of the VM
-    Object.keys(buildInDirectives).forEach(function (dname) {
 
-        var def = buildInDirectives[dname]
+    var _diretives = util.extend({}, buildInDirectives, _globalDirectives)
+    // compile directives of the VM
+    Object.keys(_diretives).forEach(function (dname) {
+
+        var def = _diretives[dname]
         dname = NS + dname
 
         var bindingDrts = util.slice(el.querySelectorAll('[' + dname + ']'))
@@ -213,6 +212,9 @@ Reve.component = function (id, options) {
     _components[id] = c
     return c
 }
+Reve.directive = function (id, def) {
+    _globalDirectives[id] = def
+}
 
 /**
  * Abstract direcitve
@@ -249,10 +251,8 @@ function Directive(vm, tar, def, name, expr) {
     d.$id = _did++
 
     var bind = def.bind
-    var unbind = def.unbind
     var upda = def.update
     var prev
-    var unwatch
 
     // set properties
     util.objEach(def, function(k, v) {
@@ -269,26 +269,34 @@ function Directive(vm, tar, def, name, expr) {
     /**
      *  update handler
      */
-    function _update(kp) {
+    function _update() {
         var nexv = _exec(expr)
-        if (util.diff(nexv, prev)) {
+        if (!nexv[0] && util.diff(nexv[1], prev)) {
             var p = prev
-            prev = nexv
-            upda && upda.call(d, nexv, p, kp)
+            prev = nexv[1]
+            upda && upda.call(d, nexv[1], p, {})
         }
     }
 
     /**
      *  If expression is a string iteral, use it as value
      */
-    prev = isExpr ? _exec(expr) : expr
+    var hasError
+    if (isExpr) {
+        prev =  _exec(expr)
+        hasError = prev[0]
+        prev = prev[1]
+    } else {
+        prev = expr
+    }
     bindParams.push(prev)
     bindParams.push(expr)
     d.$update = _update
 
     // ([property-name], expression-value, expression) 
     bind && bind.apply(d, bindParams, expr)
-    upda && upda.call(d, prev)
+    // error will stop update
+    !hasError && upda && upda.call(d, prev)
 }
 
 function _isExpr(c) {
@@ -301,7 +309,8 @@ function _strip (expr) {
 }
 function _execLiteral (expr, vm) {
     if (!_isExpr(expr)) return {}
-    return _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','))
+    var r = _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ',')) 
+    return r[0] ? {} : r[1]
 }
 function _getAttribute (el, an) {
     return el && el.getAttribute(an)
