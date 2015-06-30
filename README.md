@@ -313,7 +313,7 @@ Define a custom directive with `Reve.directive`, such as below example to define
 ```
 
 ```js
-Zect.directive('tap', {
+Reve.directive('tap', {
     bind: function (value, expression) {
         // do something when init
     },
