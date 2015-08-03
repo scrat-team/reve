@@ -176,10 +176,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        })
 
 	        if (cdata) {
-	            data = _execLiteral(cdata, this)            
+	            data = _execLiteral(cdata, this, NS + 'data')            
 	        }
 	        if (cmethods) {
-	            methods = _execLiteral(cmethods, this)
+	            methods = _execLiteral(cmethods, this, NS + 'methods')
 	        }
 	        tar._component = componentDec
 	        
@@ -368,9 +368,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            .match(/^\{([\s\S]*)\}$/m)[1]
 	            .replace(/^- /, '')
 	}
-	function _execLiteral (expr, vm) {
+	function _execLiteral (expr, vm, name) {
 	    if (!_isExpr(expr)) return {}
-	    var r = _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ',')) 
+	    var r = _execute(vm, expr.replace(new RegExp(conf.directiveSep, 'g'), ','), name) 
 	    return r[0] ? {} : r[1]
 	}
 	function _getAttribute (el, an) {
@@ -557,10 +557,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.unbind()
 
 	            var fn = handler
+	            var that = this
 	            if (util.type(fn) !== 'function')
 	                return console.warn('"' + conf.namespace + 'on" only accept function. {' + this._expr + '}')
 
-	            this.fn = fn.bind(this.$vm)
+	            this.fn = function (e) {
+	                e.$target = that.$el 
+	                return fn.call(that.$vm, e)
+	            }
 	            $(this.$el).on(this.type, this.fn, false)
 
 	        },
